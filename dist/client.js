@@ -1,17 +1,12 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TelegramerClient = void 0;
-const crypto_js_1 = __importDefault(require("crypto-js"));
 const events_1 = require("events");
 class TelegramerClient extends events_1.EventEmitter {
     /**
      * Создает новый экземпляр клиента Telegramer
      * @param config Конфигурация клиента
      * @param config.apiKey API ключ проекта
-     * @param config.apiSecret Секретный ключ для шифрования
      * @param config.baseUrl Базовый URL API
      * @param config.migrateUsersHook Опциональная функция для получения всех пользователей
      */
@@ -20,30 +15,9 @@ class TelegramerClient extends events_1.EventEmitter {
         this.BATCH_SIZE = 100000;
         this.activeBroadcasts = new Set();
         this.apiKey = config.apiKey;
-        this.apiSecret = config.apiSecret;
         this.baseUrl = config.baseUrl;
         this.migrateUsersHook = config.migrateUsersHook;
         this.startStatusCheck();
-    }
-    /**
-     * Шифрует данные для отправки на сервер
-     * @param data Данные для шифрования
-     * @returns Зашифрованные данные
-     * @private
-     */
-    encrypt(data) {
-        const iv = crypto_js_1.default.lib.WordArray.random(16);
-        const jsonData = JSON.stringify(data);
-        const encrypted = crypto_js_1.default.AES.encrypt(jsonData, this.apiSecret, {
-            iv: iv,
-            mode: crypto_js_1.default.mode.CBC,
-            padding: crypto_js_1.default.pad.Pkcs7
-        });
-        return {
-            key: this.apiKey,
-            iv: iv.toString(),
-            body: encrypted.toString()
-        };
     }
     /**
      * Выполняет HTTP запрос к API
@@ -114,18 +88,7 @@ class TelegramerClient extends events_1.EventEmitter {
      * @param event Событие для отправки
      */
     async track(event) {
-        const encryptedData = this.encrypt(event);
-        const response = await fetch(`${this.baseUrl}/api/analytics`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(encryptedData)
-        });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to send event: ${response.status} ${errorText}`);
-        }
+        await this.makeRequest('/api/analytics', 'POST', event);
     }
     /**
      * Создает новую рассылку

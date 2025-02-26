@@ -16,7 +16,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "crypto-js": "^4.2.0"
+    "crypto-js": "^4.2.0",
+    "jsencrypt": "^3.3.2"
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",

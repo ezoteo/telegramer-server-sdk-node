@@ -32,6 +32,5 @@ export interface Event {
 
 export interface TelegramerClientConfig {
   apiKey: string;
-  apiSecret: string;
   baseUrl: string;
 }

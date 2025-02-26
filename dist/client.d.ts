@@ -6,7 +6,6 @@ export declare interface TelegramerClient {
 }
 export declare class TelegramerClient extends EventEmitter {
     private readonly apiKey;
-    private readonly apiSecret;
     private readonly baseUrl;
     private readonly migrateUsersHook?;
     private readonly BATCH_SIZE;
@@ -16,20 +15,12 @@ export declare class TelegramerClient extends EventEmitter {
      * Создает новый экземпляр клиента Telegramer
      * @param config Конфигурация клиента
      * @param config.apiKey API ключ проекта
-     * @param config.apiSecret Секретный ключ для шифрования
      * @param config.baseUrl Базовый URL API
      * @param config.migrateUsersHook Опциональная функция для получения всех пользователей
      */
     constructor(config: TelegramerClientConfig & {
         migrateUsersHook?: () => Promise<UserData[]>;
     });
-    /**
-     * Шифрует данные для отправки на сервер
-     * @param data Данные для шифрования
-     * @returns Зашифрованные данные
-     * @private
-     */
-    private encrypt;
     /**
      * Выполняет HTTP запрос к API
      * @param endpoint Конечная точка API

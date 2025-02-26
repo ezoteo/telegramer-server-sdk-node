@@ -9,7 +9,6 @@ import { TelegramerClient } from 'telegramer-server-sdk';
 
 const client = new TelegramerClient({
   apiKey: 'your-api-key',
-  apiSecret: 'your-api-secret',
   baseUrl: 'https://api.example.com',
   // Опциональная функция для получения всех пользователей
   migrateUsersHook: async () => {
@@ -83,7 +82,6 @@ client.on('endBroadcast', (status) => {
 ```typescript
 new TelegramerClient(config: {
   apiKey: string;
-  apiSecret: string;
   baseUrl: string;
   migrateUsersHook?: () => Promise<{ tg: string | number }[]>;
 })
