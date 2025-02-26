@@ -23,11 +23,22 @@ const client = new TelegramerClient({
 
 // Отправка аналитического события
 await client.track({
-  type: 'button_click',
-  data: {
-    buttonId: 'start',
-    userId: '123456789'
-  }
+  eventType: 'button_click',
+  userDetails: {
+    id: '123456789'
+  },
+  eventDetails: {
+    startParameter: '',
+    path: '/start',
+    params: {
+      buttonId: 'start'
+    }
+  },
+  telegramID: '123456789',
+  language: 'en',
+  device: 'mobile',
+  isAutocapture: false,
+  eventSource: 'sdk'
 });
 
 // Создание рассылки для конкретных пользователей
@@ -87,11 +98,36 @@ new TelegramerClient(config: {
 ```typescript
 track(event: Event): Promise<void>
 
+interface UserDetails {
+  id?: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  isPremium?: boolean;
+  writeAccess?: boolean;
+}
+
+interface EventDetails {
+  id?: string;
+  startParameter: string;
+  path: string;
+  params: { [key: string]: unknown };
+}
+
 interface Event {
-  type: string;
-  data: {
-    [key: string]: any;
-  };
+  eventType: string;
+  userDetails: UserDetails;
+  eventDetails: EventDetails;
+  telegramID: string;
+  language: string;
+  device: string;
+  referrerType?: string;
+  referrer?: string;
+  timestamp?: Date;
+  isAutocapture: boolean;
+  wallet?: string;
+  sessionIdentifier?: string;
+  eventSource: string;
 }
 ```
 
