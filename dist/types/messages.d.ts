@@ -10,6 +10,7 @@ export interface MediaItem {
 }
 export interface BaseMessage {
     disable_notification: boolean;
+    parse_mode?: string;
 }
 export interface MessageText extends BaseMessage {
     type: 'message';

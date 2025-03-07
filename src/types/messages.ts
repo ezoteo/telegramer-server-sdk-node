@@ -12,6 +12,7 @@ export interface Button {
   
   export interface BaseMessage {
     disable_notification: boolean;
+    parse_mode?: string;
   }
   
   export interface MessageText extends BaseMessage {
@@ -60,4 +61,3 @@ export interface Button {
     | MessageVideoNote
     | MessageVoice
     | MessagePoll;
-  

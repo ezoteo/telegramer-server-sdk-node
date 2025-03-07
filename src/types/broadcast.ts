@@ -7,19 +7,10 @@ export interface UserData {
 export interface BroadcastOptions {
   users: string[] | 'all';
   content: TelegramMessage;
-  timezone?: string;
-  scheduledFor?: Date;
 }
 
-export interface BroadcastStatus {
-  id: string;
-  status: string;
-  stats: {
-    sent: number;
-    errors: number;
-    total: number;
-    progress: number;
-  };
-  scheduledFor?: string;
-  timezone?: string;
+export interface MessageQueueItem {
+  userId: string;
+  message: TelegramMessage;
+  projectId: string;
 }

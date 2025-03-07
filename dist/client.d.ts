@@ -1,26 +1,65 @@
 import { Event, TelegramerClientConfig } from './types/events';
-import { UserData, BroadcastOptions, BroadcastStatus } from './types/broadcast';
+import { BroadcastOptions, MessageQueueItem } from './types/broadcast';
 import { EventEmitter } from 'events';
+/**
+ * Формирует сообщение для отправки в Telegram API
+ * @param messageData Данные сообщения
+ * @returns Подготовленные тип и тело запроса
+ */
+export declare function composeMessage(messageData: MessageQueueItem): {
+    type: string;
+    body: any;
+};
 export declare interface TelegramerClient {
-    on(event: 'endBroadcast', listener: (status: BroadcastStatus) => void): this;
+    on(event: 'messageSent', listener: (userId: string, success: boolean) => void): this;
+    on(event: 'error', listener: (error: Error) => void): this;
+    on(event: 'connected', listener: () => void): this;
+    on(event: 'disconnected', listener: () => void): this;
 }
 export declare class TelegramerClient extends EventEmitter {
     private readonly apiKey;
     private readonly baseUrl;
     private readonly migrateUsersHook?;
-    private readonly BATCH_SIZE;
     private readonly activeBroadcasts;
-    private statusCheckInterval?;
+    private readonly callbackHookSendMessage;
+    private connection?;
+    private channel?;
+    private readonly QUEUE_PREFIX;
+    private readonly BATCH_SIZE;
+    private readonly BATCH_INTERVAL;
+    private processingMessages;
+    private consumerTag?;
+    private reconnectAttempts;
+    private readonly MAX_RECONNECT_ATTEMPTS;
+    private reconnectTimeout?;
+    private processIncompleteInterval?;
+    private lastBatchTime;
+    private isConnecting;
+    private connectionUrl;
     /**
      * Создает новый экземпляр клиента Telegramer
      * @param config Конфигурация клиента
      * @param config.apiKey API ключ проекта
      * @param config.baseUrl Базовый URL API
      * @param config.migrateUsersHook Опциональная функция для получения всех пользователей
+     * @param config.callbackHookSendMessage Функция для отправки сообщений
      */
-    constructor(config: TelegramerClientConfig & {
-        migrateUsersHook?: () => Promise<UserData[]>;
-    });
+    constructor(config: TelegramerClientConfig);
+    /**
+     * Получает конфигурацию из API и устанавливает параметры подключения
+     * @private
+     */
+    private setupConfig;
+    /**
+     * Устанавливает соединение с RabbitMQ
+     * @private
+     */
+    private connectToRabbitMQ;
+    /**
+     * Обрабатывает отключение и пытается переподключиться
+     * @private
+     */
+    private handleDisconnect;
     /**
      * Выполняет HTTP запрос к API
      * @param endpoint Конечная точка API
@@ -31,25 +70,29 @@ export declare class TelegramerClient extends EventEmitter {
      */
     private makeRequest;
     /**
-     * Проверяет статус активных рассылок
+     * Начинает обработку сообщений из очереди
      * @private
      */
-    private checkBroadcastsStatus;
+    private startProcessingMessages;
     /**
-     * Запускает периодическую проверку статуса рассылок
+     * Останавливает обработку сообщений
      * @private
      */
-    private startStatusCheck;
-    /**
-     * Останавливает проверку статуса рассылок
-     * @private
-     */
-    private stopStatusCheck;
+    private stopProcessingMessages;
     /**
      * Отправляет событие аналитики
      * @param event Событие для отправки
      */
     track(event: Event): Promise<void>;
+    /**
+     * Проверяет, установлено ли соединение с RabbitMQ
+     * @returns true, если соединение установлено
+     */
+    isConnected(): boolean;
+    /**
+     * Закрывает соединения при завершении работы
+     */
+    close(): Promise<void>;
     /**
      * Создает новую рассылку
      * @param options Параметры рассылки
@@ -57,5 +100,7 @@ export declare class TelegramerClient extends EventEmitter {
      * @param options.content Контент рассылки
      * @returns Информация о созданной рассылке
      */
-    broadcast(options: BroadcastOptions): Promise<any>;
+    broadcast(options: BroadcastOptions): Promise<{
+        broadcastId: string;
+    }>;
 }

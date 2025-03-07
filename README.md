@@ -5,14 +5,35 @@ SDK для отправки аналитических событий и соз�
 ## Использование
 
 ```typescript
-import { TelegramerClient } from 'telegramer-server-sdk';
+import { TelegramerClient, composeMessage } from 'telegramer-server-sdk';
+
+// Функция для отправки сообщений в Telegram
+const sendTelegramMessage = async (payload) => {
+  const { type, body } = composeMessage(payload);
+  const telegramApiUrl = `https://api.telegram.org/bot${BOT_TOKEN}`;
+  
+  const response = await fetch(`${telegramApiUrl}/${type}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+    
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(JSON.stringify(errorData));
+  }
+};
 
 const client = new TelegramerClient({
   apiKey: 'your-api-key',
   baseUrl: 'https://api.example.com',
+  // Обязательный колбэк для отправки сообщений
+  callbackHookSendMessage: sendTelegramMessage,
   // Опциональная функция для получения всех пользователей
   migrateUsersHook: async () => {
-    // Получаем пользователей из вашей базы данных
+    // Получаем пользователей из базы данных
     return [
       { tg: '123456789' },
       { tg: '987654321' }
@@ -41,17 +62,20 @@ await client.track({
 });
 
 // Создание рассылки для конкретных пользователей
-await client.broadcast({
+const broadcastResult = await client.broadcast({
   users: ['123456789', '987654321'],
   content: {
     type: 'message',
     text: 'Привет!',
     disable_notification: false,
+    parse_mode: 'MarkdownV2',
     buttons: [
       { text: 'Открыть', url: 'https://example.com' }
     ]
   }
 });
+
+console.log(`Рассылка создана с ID: ${broadcastResult.broadcastId}`);
 
 // Создание рассылки для всех пользователей (используя migrateUsersHook)
 await client.broadcast({
@@ -59,20 +83,43 @@ await client.broadcast({
   content: {
     type: 'message',
     text: 'Всем привет!',
-    disable_notification: false
+    disable_notification: false,
+    parse_mode: 'MarkdownV2'
   }
 });
 
-// Отслеживание завершения рассылок
-client.on('endBroadcast', (status) => {
-  if (status.status === 'completed') {
-    console.log(`Рассылка ${status.id} завершена`);
-    console.log(`Отправлено: ${status.stats.sent}`);
-    console.log(`Ошибок: ${status.stats.errors}`);
-    console.log(`Всего: ${status.stats.total}`);
-    console.log(`Прогресс: ${status.stats.progress}%`);
+// Отслеживание состояния подключения
+client.on('connected', () => {
+  console.log('Подключение к RabbitMQ установлено');
+});
+
+client.on('disconnected', () => {
+  console.log('Соединение с RabbitMQ разорвано, пытаемся переподключиться...');
+});
+
+// Отслеживание отправки сообщений
+client.on('messageSent', (userId, success) => {
+  if (success) {
+    console.log(`Сообщение успешно отправлено пользователю ${userId}`);
+  } else {
+    console.log(`Ошибка при отправке сообщения пользователю ${userId}`);
   }
 });
+
+// Отслеживание ошибок
+client.on('error', (error) => {
+  console.error('Произошла ошибка:', error.message);
+});
+
+// Проверка состояния подключения
+if (client.isConnected()) {
+  console.log('Клиент подключен к RabbitMQ');
+} else {
+  console.log('Клиент не подключен к RabbitMQ');
+}
+
+// Закрытие соединения при завершении работы
+await client.close();
 ```
 
 ## API
@@ -83,8 +130,24 @@ client.on('endBroadcast', (status) => {
 new TelegramerClient(config: {
   apiKey: string;
   baseUrl: string;
+  callbackHookSendMessage: (payload: MessageQueueItem) => Promise<void>;
   migrateUsersHook?: () => Promise<{ tg: string | number }[]>;
 })
+```
+
+> **Примечание**: 
+> - Параметры подключения к RabbitMQ автоматически загружаются из API. SDK отправляет запрос на эндпоинт `/api/sdk/config` для получения строки подключения.
+> - `callbackHookSendMessage` - обязательная функция для отправки сообщений в Telegram API. SDK предоставляет вспомогательную функцию `composeMessage` для формирования запросов.
+> - При ошибке с кодом 429 (превышение лимита запросов) сообщение будет автоматически возвращено в очередь и будет пробовать отправляться до успешной доставки.
+
+### Вспомогательные функции
+
+#### composeMessage
+
+Формирует данные для запроса к Telegram API на основе сообщения.
+
+```typescript
+composeMessage(messageData: MessageQueueItem): { endpoint: string; body: any }
 ```
 
 ### Методы
@@ -131,36 +194,63 @@ interface Event {
 
 #### broadcast
 
-Создает новую рассылку.
+Создает новую рассылку, отправляя сообщения в очередь RabbitMQ для последующей обработки и отправки через Telegram API.
 
 ```typescript
 broadcast(options: {
   users: string[] | 'all';
   content: TelegramMessage;
-  timezone?: string;
-  scheduledFor?: Date;
-}): Promise<{ success: boolean; broadcastId: string }>
+}): Promise<{ broadcastId: string }>
+```
+
+#### isConnected
+
+Проверяет, установлено ли соединение с RabbitMQ.
+
+```typescript
+isConnected(): boolean
+```
+
+#### close
+
+Закрывает соединение с RabbitMQ при завершении работы с SDK.
+
+```typescript
+close(): Promise<void>
 ```
 
 ### События
 
-#### endBroadcast
+#### connected
 
-Событие вызывается при завершении рассылки.
+Событие вызывается при успешном подключении к RabbitMQ.
 
 ```typescript
-on('endBroadcast', (status: {
-  id: string;
-  status: 'pending' | 'scheduled' | 'sending' | 'completed' | 'failed';
-  stats: {
-    sent: number;
-    errors: number;
-    total: number;
-    progress: number;
-  };
-  scheduledFor?: string;
-  timezone?: string;
-}) => void)
+on('connected', () => void)
+```
+
+#### disconnected
+
+Событие вызывается при разрыве соединения с RabbitMQ.
+
+```typescript
+on('disconnected', () => void)
+```
+
+#### messageSent
+
+Событие вызывается при отправке сообщения пользователю.
+
+```typescript
+on('messageSent', (userId: string, success: boolean) => void)
+```
+
+#### error
+
+Событие вызывается при возникновении ошибки.
+
+```typescript
+on('error', (error: Error) => void)
 ```
 
 ### Типы сообщений

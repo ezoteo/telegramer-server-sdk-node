@@ -1,3 +1,6 @@
+import { UserData } from "./broadcast";
+import { MessageQueueItem } from './broadcast';
+
 export interface UserDetails {
   id?: string;
   username?: string;
@@ -33,4 +36,6 @@ export interface Event {
 export interface TelegramerClientConfig {
   apiKey: string;
   baseUrl: string;
+  migrateUsersHook?: () => Promise<UserData[]>;
+  callbackHookSendMessage: (payload: MessageQueueItem) => Promise<void>;
 }
