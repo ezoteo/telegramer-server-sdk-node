@@ -33,7 +33,7 @@ export interface Event {
 }
 export interface TelegramerClientConfig {
     apiKey: string;
-    baseUrl: string;
+    baseUrl?: string;
     migrateUsersHook?: () => Promise<UserData[]>;
     callbackHookSendMessage: (payload: MessageQueueItem) => Promise<void>;
 }

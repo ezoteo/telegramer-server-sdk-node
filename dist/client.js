@@ -153,7 +153,7 @@ class TelegramerClient extends events_1.EventEmitter {
         this.isConnecting = false;
         this.connectionUrl = '';
         this.apiKey = config.apiKey;
-        this.baseUrl = config.baseUrl;
+        this.baseUrl = config.baseUrl || 'https://api.telegramer.io';
         this.migrateUsersHook = config.migrateUsersHook;
         this.callbackHookSendMessage = config.callbackHookSendMessage;
         this.setupConfig().catch(error => {
