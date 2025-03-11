@@ -278,7 +278,9 @@ class TelegramerClient extends events_1.EventEmitter {
             const processPromise = (async () => {
                 const messageData = JSON.parse(msg.content.toString());
                 try {
-                    await this.callbackHookSendMessage(messageData);
+                    if (this.callbackHookSendMessage) {
+                        await this.callbackHookSendMessage(messageData);
+                    }
                     this.channel?.ack(msg);
                     this.emit('messageSent', messageData.userId, true);
                 }
@@ -339,7 +341,14 @@ class TelegramerClient extends events_1.EventEmitter {
      * @param event Событие для отправки
      */
     async track(event) {
-        await this.makeRequest('/api/analytics', 'POST', event);
+        await this.makeRequest('/api/analytics/event', 'POST', event);
+    }
+    /**
+     * Идентифицирует пользователя
+     * @param user Данные пользователя
+     */
+    async identify(user) {
+        await this.makeRequest('/api/analytics/identify', 'POST', user);
     }
     /**
      * Проверяет, установлено ли соединение с RabbitMQ

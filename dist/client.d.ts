@@ -1,4 +1,4 @@
-import { Event, TelegramerClientConfig } from './types/events';
+import { Event, TelegramerClientConfig, UserDetails } from './types/events';
 import { BroadcastOptions, MessageQueueItem } from './types/broadcast';
 import { EventEmitter } from 'events';
 /**
@@ -21,7 +21,7 @@ export declare class TelegramerClient extends EventEmitter {
     private readonly baseUrl;
     private readonly migrateUsersHook?;
     private readonly activeBroadcasts;
-    private readonly callbackHookSendMessage;
+    private readonly callbackHookSendMessage?;
     private connection?;
     private channel?;
     private readonly QUEUE_PREFIX;
@@ -84,6 +84,11 @@ export declare class TelegramerClient extends EventEmitter {
      * @param event Событие для отправки
      */
     track(event: Event): Promise<void>;
+    /**
+     * Идентифицирует пользователя
+     * @param user Данные пользователя
+     */
+    identify(user: UserDetails): Promise<void>;
     /**
      * Проверяет, установлено ли соединение с RabbitMQ
      * @returns true, если соединение установлено

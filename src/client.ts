@@ -1,4 +1,4 @@
-import { Event, TelegramerClientConfig } from './types/events';
+import { Event, TelegramerClientConfig, UserDetails } from './types/events';
 import { UserData, BroadcastOptions, MessageQueueItem } from './types/broadcast';
 import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
@@ -122,7 +122,7 @@ export class TelegramerClient extends EventEmitter {
   private readonly baseUrl: string;
   private readonly migrateUsersHook?: TelegramerClientConfig['migrateUsersHook'];
   private readonly activeBroadcasts: Set<string> = new Set();
-  private readonly callbackHookSendMessage: TelegramerClientConfig['callbackHookSendMessage'];
+  private readonly callbackHookSendMessage?: TelegramerClientConfig['callbackHookSendMessage'];
 
   private connection?: amqp.ChannelModel;
   private channel?: amqp.Channel;
@@ -297,7 +297,9 @@ export class TelegramerClient extends EventEmitter {
         const messageData: MessageQueueItem = JSON.parse(msg.content.toString());
 
         try {
-          await this.callbackHookSendMessage(messageData);
+          if (this.callbackHookSendMessage) {
+            await this.callbackHookSendMessage(messageData);
+          }
           this.channel?.ack(msg);
           this.emit('messageSent', messageData.userId, true);
         } catch (error) {
@@ -368,7 +370,15 @@ export class TelegramerClient extends EventEmitter {
    * @param event Событие для отправки
    */
   public async track(event: Event): Promise<void> {
-    await this.makeRequest('/api/analytics', 'POST', event);
+    await this.makeRequest('/api/analytics/event', 'POST', event);
+  }
+
+  /**
+   * Идентифицирует пользователя
+   * @param user Данные пользователя
+   */
+  public async identify(user: UserDetails): Promise<void> {
+    await this.makeRequest('/api/analytics/identify', 'POST', user);
   }
 
   /**
