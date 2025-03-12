@@ -370,7 +370,7 @@ export class TelegramerClient extends EventEmitter {
    * @param event Событие для отправки
    */
   public async track(userId: string | number, type: string, payload: Event): Promise<void> {
-    const { language = '', device = '', ...eventData } = payload;
+    const { language = '', device = 'sdk', ...eventData } = payload;
     await this.makeRequest('/api/analytics/event', 'POST', {
       eventType: type,
       eventDetails: eventData,

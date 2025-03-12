@@ -6,6 +6,7 @@ export interface UserDetails {
     firstName?: string;
     lastName?: string;
     isPremium?: boolean;
+    timeZone?: number;
 }
 export interface Event {
     startParameter: string;
