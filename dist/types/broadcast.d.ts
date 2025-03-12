@@ -9,5 +9,4 @@ export interface BroadcastOptions {
 export interface MessageQueueItem {
     userId: string;
     message: TelegramMessage;
-    projectId: string;
 }

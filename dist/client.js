@@ -251,7 +251,7 @@ class TelegramerClient extends events_1.EventEmitter {
             method,
             headers: {
                 'Content-Type': 'application/json',
-                'x-project-id': this.apiKey
+                'x-api-key': this.apiKey
             },
             body: data ? JSON.stringify(data) : undefined
         });
@@ -340,8 +340,15 @@ class TelegramerClient extends events_1.EventEmitter {
      * Отправляет событие аналитики
      * @param event Событие для отправки
      */
-    async track(event) {
-        await this.makeRequest('/api/analytics/event', 'POST', event);
+    async track(userId, type, payload) {
+        const { language = '', device = '', ...eventData } = payload;
+        await this.makeRequest('/api/analytics/event', 'POST', {
+            eventType: type,
+            eventDetails: eventData,
+            telegramId: userId.toString(),
+            language,
+            device
+        });
     }
     /**
      * Идентифицирует пользователя
@@ -400,8 +407,7 @@ class TelegramerClient extends events_1.EventEmitter {
         for (const userId of userIds) {
             const messageItem = {
                 userId,
-                message: options.content,
-                projectId: this.apiKey
+                message: options.content
             };
             this.channel.sendToQueue(queueName, Buffer.from(JSON.stringify(messageItem)), { persistent: true });
         }

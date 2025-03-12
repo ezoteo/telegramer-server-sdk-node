@@ -9,20 +9,12 @@ export interface UserDetails {
   isPremium?: boolean;
 }
 
-export interface EventDetails {
-  id?: string;
+export interface Event {
   startParameter: string;
   path: string;
   params: { [key: string]: unknown };
-}
-
-export interface Event {
-  eventType: string;
-  eventDetails: EventDetails;
-  telegramId: string;
-  language: string;
-  device: string;
-  timestamp?: Date;
+  language?: string;
+  device?: string;
 }
 
 export interface TelegramerClientConfig {

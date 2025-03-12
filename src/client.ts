@@ -1,5 +1,5 @@
 import { Event, TelegramerClientConfig, UserDetails } from './types/events';
-import { UserData, BroadcastOptions, MessageQueueItem } from './types/broadcast';
+import { BroadcastOptions, MessageQueueItem } from './types/broadcast';
 import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
 import { ApiConfigResponse } from './types/api';
@@ -263,7 +263,7 @@ export class TelegramerClient extends EventEmitter {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'x-project-id': this.apiKey
+        'x-api-key': this.apiKey
       },
       body: data ? JSON.stringify(data) : undefined
     });
@@ -369,8 +369,15 @@ export class TelegramerClient extends EventEmitter {
    * Отправляет событие аналитики
    * @param event Событие для отправки
    */
-  public async track(event: Event): Promise<void> {
-    await this.makeRequest('/api/analytics/event', 'POST', event);
+  public async track(userId: string | number, type: string, payload: Event): Promise<void> {
+    const { language = '', device = '', ...eventData } = payload;
+    await this.makeRequest('/api/analytics/event', 'POST', {
+      eventType: type,
+      eventDetails: eventData,
+      telegramId: userId.toString(),
+      language,
+      device
+    });
   }
 
   /**
@@ -440,8 +447,7 @@ export class TelegramerClient extends EventEmitter {
     for (const userId of userIds) {
       const messageItem: MessageQueueItem = {
         userId,
-        message: options.content,
-        projectId: this.apiKey
+        message: options.content
       };
 
       this.channel.sendToQueue(

@@ -83,7 +83,7 @@ export declare class TelegramerClient extends EventEmitter {
      * Отправляет событие аналитики
      * @param event Событие для отправки
      */
-    track(event: Event): Promise<void>;
+    track(userId: string | number, type: string, payload: Event): Promise<void>;
     /**
      * Идентифицирует пользователя
      * @param user Данные пользователя
