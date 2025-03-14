@@ -1,4 +1,4 @@
-import { Event, TelegramerClientConfig, UserDetails } from './types/events';
+import { Event, TelesendClientConfig, UserDetails } from './types/events';
 import { BroadcastOptions, MessageQueueItem } from './types/broadcast';
 import { EventEmitter } from 'events';
 import * as amqp from 'amqplib';
@@ -110,19 +110,19 @@ export function composeMessage(messageData: MessageQueueItem): { type: string; b
   return { type, body };
 }
 
-export declare interface TelegramerClient {
+export declare interface TelesendClient {
   on(event: 'messageSent', listener: (userId: string, success: boolean) => void): this;
   on(event: 'error', listener: (error: Error) => void): this;
   on(event: 'connected', listener: () => void): this;
   on(event: 'disconnected', listener: () => void): this;
 }
 
-export class TelegramerClient extends EventEmitter {
+export class TelesendClient extends EventEmitter {
   private readonly apiKey: string;
   private readonly baseUrl: string;
-  private readonly migrateUsersHook?: TelegramerClientConfig['migrateUsersHook'];
+  private readonly migrateUsersHook?: TelesendClientConfig['migrateUsersHook'];
   private readonly activeBroadcasts: Set<string> = new Set();
-  private readonly callbackHookSendMessage?: TelegramerClientConfig['callbackHookSendMessage'];
+  private readonly callbackHookSendMessage?: TelesendClientConfig['callbackHookSendMessage'];
 
   private connection?: amqp.ChannelModel;
   private channel?: amqp.Channel;
@@ -140,17 +140,17 @@ export class TelegramerClient extends EventEmitter {
   private connectionUrl = '';
 
   /**
-   * Создает новый экземпляр клиента Telegramer
+   * Создает новый экземпляр клиента Telesend
    * @param config Конфигурация клиента
    * @param config.apiKey API ключ проекта
    * @param config.baseUrl Базовый URL API
    * @param config.migrateUsersHook Опциональная функция для получения всех пользователей
    * @param config.callbackHookSendMessage Функция для отправки сообщений
    */
-  constructor(config: TelegramerClientConfig) {
+  constructor(config: TelesendClientConfig) {
     super();
     this.apiKey = config.apiKey;
-    this.baseUrl = config.baseUrl || 'https://api.telegramer.io';
+    this.baseUrl = config.baseUrl || 'https://api.Telesend.io';
     this.migrateUsersHook = config.migrateUsersHook;
     this.callbackHookSendMessage = config.callbackHookSendMessage;
 

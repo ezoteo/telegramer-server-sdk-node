@@ -1,4 +1,4 @@
-import { Event, TelegramerClientConfig, UserDetails } from './types/events';
+import { Event, TelesendClientConfig, UserDetails } from './types/events';
 import { BroadcastOptions, MessageQueueItem } from './types/broadcast';
 import { EventEmitter } from 'events';
 /**
@@ -10,13 +10,13 @@ export declare function composeMessage(messageData: MessageQueueItem): {
     type: string;
     body: any;
 };
-export declare interface TelegramerClient {
+export declare interface TelesendClient {
     on(event: 'messageSent', listener: (userId: string, success: boolean) => void): this;
     on(event: 'error', listener: (error: Error) => void): this;
     on(event: 'connected', listener: () => void): this;
     on(event: 'disconnected', listener: () => void): this;
 }
-export declare class TelegramerClient extends EventEmitter {
+export declare class TelesendClient extends EventEmitter {
     private readonly apiKey;
     private readonly baseUrl;
     private readonly migrateUsersHook?;
@@ -37,14 +37,14 @@ export declare class TelegramerClient extends EventEmitter {
     private isConnecting;
     private connectionUrl;
     /**
-     * Создает новый экземпляр клиента Telegramer
+     * Создает новый экземпляр клиента Telesend
      * @param config Конфигурация клиента
      * @param config.apiKey API ключ проекта
      * @param config.baseUrl Базовый URL API
      * @param config.migrateUsersHook Опциональная функция для получения всех пользователей
      * @param config.callbackHookSendMessage Функция для отправки сообщений
      */
-    constructor(config: TelegramerClientConfig);
+    constructor(config: TelesendClientConfig);
     /**
      * Получает конфигурацию из API и устанавливает параметры подключения
      * @private

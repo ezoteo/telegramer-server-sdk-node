@@ -17,7 +17,7 @@ export interface Event {
     language?: string;
     device?: string;
 }
-export interface TelegramerClientConfig {
+export interface TelesendClientConfig {
     apiKey: string;
     baseUrl?: string;
     migrateUsersHook?: () => Promise<UserData[]>;

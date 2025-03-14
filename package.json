@@ -1,7 +1,7 @@
 {
-  "name": "telegramer-server-sdk",
-  "version": "1.0.6",
-  "description": "SDK for sending analytics events to Telegramer server",
+  "name": "telesend-server-sdk",
+  "version": "1.0.0",
+  "description": "SDK for sending analytics events to Telesend server",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

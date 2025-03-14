@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TelegramerClient = void 0;
+exports.TelesendClient = void 0;
 exports.composeMessage = composeMessage;
 const events_1 = require("events");
 const amqp = __importStar(require("amqplib"));
@@ -131,9 +131,9 @@ function composeMessage(messageData) {
     }
     return { type, body };
 }
-class TelegramerClient extends events_1.EventEmitter {
+class TelesendClient extends events_1.EventEmitter {
     /**
-     * Создает новый экземпляр клиента Telegramer
+     * Создает новый экземпляр клиента Telesend
      * @param config Конфигурация клиента
      * @param config.apiKey API ключ проекта
      * @param config.baseUrl Базовый URL API
@@ -153,7 +153,7 @@ class TelegramerClient extends events_1.EventEmitter {
         this.isConnecting = false;
         this.connectionUrl = '';
         this.apiKey = config.apiKey;
-        this.baseUrl = config.baseUrl || 'https://api.telegramer.io';
+        this.baseUrl = config.baseUrl || 'https://api.Telesend.io';
         this.migrateUsersHook = config.migrateUsersHook;
         this.callbackHookSendMessage = config.callbackHookSendMessage;
         this.setupConfig().catch(error => {
@@ -415,4 +415,4 @@ class TelegramerClient extends events_1.EventEmitter {
         return { broadcastId };
     }
 }
-exports.TelegramerClient = TelegramerClient;
+exports.TelesendClient = TelesendClient;
