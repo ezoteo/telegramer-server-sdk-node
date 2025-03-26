@@ -107,5 +107,5 @@ export declare class TelesendClient extends EventEmitter {
      */
     broadcast(options: BroadcastOptions): Promise<{
         broadcastId: string;
-    }>;
+    } | null>;
 }

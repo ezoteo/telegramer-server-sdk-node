@@ -153,7 +153,7 @@ class TelesendClient extends events_1.EventEmitter {
         this.isConnecting = false;
         this.connectionUrl = '';
         this.apiKey = config.apiKey;
-        this.baseUrl = config.baseUrl || 'https://api.Telesend.io';
+        this.baseUrl = config.baseUrl || 'https://api.telesend.io';
         this.migrateUsersHook = config.migrateUsersHook;
         this.callbackHookSendMessage = config.callbackHookSendMessage;
         this.setupConfig().catch(error => {
@@ -165,20 +165,36 @@ class TelesendClient extends events_1.EventEmitter {
      * @private
      */
     async setupConfig() {
-        try {
-            const config = await this.makeRequest('/api/sdk/config', 'GET');
-            if (config.rabbitmq && config.rabbitmq.url) {
-                this.connectionUrl = config.rabbitmq.url;
+        const maxRetries = 3;
+        let retries = 0;
+        let success = false;
+        while (retries < maxRetries && !success) {
+            try {
+                if (retries > 0) {
+                    this.emit('info', `Getting config attempt: ${retries + 1} of ${maxRetries}`);
+                    await new Promise((resolve) => setTimeout(resolve, 5000));
+                }
+                const config = await this.makeRequest('/api/sdk/config', 'GET');
+                if (config.rabbitmq && config.rabbitmq.url) {
+                    this.connectionUrl = config.rabbitmq.url;
+                }
+                else {
+                    this.connectionUrl = 'amqp://localhost';
+                }
+                success = true;
+                await this.connectToRabbitMQ();
             }
-            else {
-                this.connectionUrl = 'amqp://localhost';
+            catch (error) {
+                retries++;
+                if (retries >= maxRetries) {
+                    this.connectionUrl = 'amqp://localhost';
+                    this.emit('error', new Error(`Failed to get config from API after ${maxRetries} attempts: ${error.message}. Using default connection.`));
+                    await this.connectToRabbitMQ();
+                }
+                else {
+                    this.emit('warn', `Error getting config (attempt ${retries} of ${maxRetries}): ${error.message}. Retrying in 5 seconds.`);
+                }
             }
-            await this.connectToRabbitMQ();
-        }
-        catch (error) {
-            this.connectionUrl = 'amqp://localhost';
-            this.emit('error', new Error(`Failed to get config from API: ${error.message}. Using default connection.`));
-            await this.connectToRabbitMQ();
         }
     }
     /**
@@ -257,7 +273,7 @@ class TelesendClient extends events_1.EventEmitter {
         });
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Request failed: ${response.status} ${errorText}`);
+            console.log(`Request failed: ${response.status} ${errorText}`);
         }
         return response.json();
     }
@@ -389,12 +405,14 @@ class TelesendClient extends events_1.EventEmitter {
      */
     async broadcast(options) {
         if (!this.channel) {
-            throw new Error('RabbitMQ connection is not established');
+            console.log('Connection is not established');
+            return null;
         }
         let userIds;
         if (options.users === 'all') {
             if (!this.migrateUsersHook) {
-                throw new Error('migrateUsersHook is required for broadcasting to all users');
+                console.log('migrateUsersHook is required for broadcasting to all users');
+                return null;
             }
             const users = await this.migrateUsersHook();
             userIds = users.map(u => u.tg.toString());
