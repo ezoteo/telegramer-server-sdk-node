@@ -33,6 +33,7 @@ export declare class TelesendClient extends EventEmitter {
     private readonly MAX_RECONNECT_ATTEMPTS;
     private reconnectTimeout?;
     private processIncompleteInterval?;
+    private checkQueueInterval?;
     private lastBatchTime;
     private isConnecting;
     private connectionUrl;
@@ -69,6 +70,11 @@ export declare class TelesendClient extends EventEmitter {
      * @private
      */
     private makeRequest;
+    /**
+     * Начинает мониторинг очереди сообщений для проверки новых рассылок
+     * @private
+     */
+    private startQueueMonitoring;
     /**
      * Начинает обработку сообщений из очереди
      * @private
