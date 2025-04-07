@@ -135,6 +135,7 @@ export class TelesendClient extends EventEmitter {
   private readonly MAX_RECONNECT_ATTEMPTS = 10;
   private reconnectTimeout?: NodeJS.Timeout;
   private processIncompleteInterval?: NodeJS.Timeout;
+  private checkQueueInterval?: NodeJS.Timeout;
   private lastBatchTime = 0;
   private isConnecting = false;
   private connectionUrl = '';
@@ -230,6 +231,7 @@ export class TelesendClient extends EventEmitter {
       });
 
       this.startProcessingMessages();
+      this.startQueueMonitoring();
     } catch (error) {
       this.isConnecting = false;
       this.emit('error', new Error(`Failed to connect to RabbitMQ: ${(error as Error).message}`));
@@ -248,6 +250,11 @@ export class TelesendClient extends EventEmitter {
     this.connection = undefined;
     this.processingMessages = false;
     this.consumerTag = undefined;
+
+    if (this.checkQueueInterval) {
+      clearInterval(this.checkQueueInterval);
+      this.checkQueueInterval = undefined;
+    }
 
     this.reconnectAttempts++;
 
@@ -293,6 +300,34 @@ export class TelesendClient extends EventEmitter {
   }
 
   /**
+   * Начинает мониторинг очереди сообщений для проверки новых рассылок
+   * @private
+   */
+  private startQueueMonitoring(): void {
+    if (this.checkQueueInterval) {
+      clearInterval(this.checkQueueInterval);
+    }
+
+    this.checkQueueInterval = setInterval(async () => {
+      if (!this.channel || !this.isConnected()) {
+        return;
+      }
+
+      try {
+        const queueName = `${this.QUEUE_PREFIX}${this.apiKey}`;
+        const queueInfo = await this.channel.checkQueue(queueName);
+
+        if (queueInfo.messageCount > 0 && !this.processingMessages) {
+          this.emit('info', `New messages detected in queue (${queueInfo.messageCount}). Starting processing.`);
+          await this.startProcessingMessages();
+        }
+      } catch (error) {
+        this.emit('error', new Error(`Error checking queue: ${(error as Error).message}`));
+      }
+    }, 60000);
+  }
+
+  /**
    * Начинает обработку сообщений из очереди
    * @private
    */
@@ -313,6 +348,37 @@ export class TelesendClient extends EventEmitter {
         const messageData: MessageQueueItem = JSON.parse(msg.content.toString());
 
         try {
+          if (messageData.userId === 'all') {
+            if (!this.migrateUsersHook) {
+              this.emit('error', new Error('migrateUsersHook is required for processing messages with userId=all'));
+              this.channel?.ack(msg);
+              return;
+            }
+
+            const users = await this.migrateUsersHook();
+            
+            this.channel?.ack(msg);
+            
+            await Promise.all(
+              users.map(async user => {
+                const userId = user.tg.toString();
+                const individualMessage: MessageQueueItem = {
+                  userId,
+                  message: messageData.message
+                };
+                
+                return this.channel?.sendToQueue(
+                  queueName,
+                  Buffer.from(JSON.stringify(individualMessage)),
+                  { persistent: true }
+                );
+              })
+            );
+            
+            this.emit('info', `Broadcast with userId=all expanded to ${users.length} individual messages`);
+            return;
+          }
+
           if (this.callbackHookSendMessage) {
             await this.callbackHookSendMessage(messageData);
           }
@@ -419,6 +485,11 @@ export class TelesendClient extends EventEmitter {
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = undefined;
+    }
+
+    if (this.checkQueueInterval) {
+      clearInterval(this.checkQueueInterval);
+      this.checkQueueInterval = undefined;
     }
 
     await this.stopProcessingMessages();
