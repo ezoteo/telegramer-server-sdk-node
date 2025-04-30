@@ -8,6 +8,7 @@ export interface UserDetails {
   lastName?: string;
   isPremium?: boolean;
   timeZone?: number;
+  languageCode?: string;
 }
 
 export interface Event {
