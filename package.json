@@ -1,6 +1,6 @@
 {
   "name": "telesend-server-sdk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "SDK for sending analytics events to Telesend server",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

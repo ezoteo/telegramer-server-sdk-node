@@ -350,16 +350,21 @@ class TelesendClient extends events_1.EventEmitter {
                     this.emit('messageSent', messageData.userId, true);
                 }
                 catch (error) {
-                    const errorData = JSON.parse(error.message);
-                    if (errorData.error_code === 429) {
-                        this.channel?.sendToQueue(queueName, Buffer.from(JSON.stringify(messageData)), { persistent: true });
-                        this.channel?.ack(msg);
-                        this.emit('error', new Error(`Rate limit hit when sending message to user ${messageData.userId}, retrying later`));
+                    try {
+                        const errorData = JSON.parse(error.message);
+                        if (errorData.error_code === 429) {
+                            this.channel?.sendToQueue(queueName, Buffer.from(JSON.stringify(messageData)), { persistent: true });
+                            this.channel?.ack(msg);
+                            this.emit('error', new Error(`Rate limit hit when sending message to user ${messageData.userId}, retrying later`));
+                        }
+                        else {
+                            this.channel?.ack(msg);
+                            this.emit('messageSent', messageData.userId, false);
+                            this.emit('error', new Error(`Error sending message to user ${messageData.userId}: ${error.message}`));
+                        }
                     }
-                    else {
-                        this.channel?.ack(msg);
-                        this.emit('messageSent', messageData.userId, false);
-                        this.emit('error', new Error(`Error sending message to user ${messageData.userId}: ${error.message}`));
+                    catch (error) {
+                        this.emit('error', new Error(`Error processing message: ${error.message}`));
                     }
                 }
             })();

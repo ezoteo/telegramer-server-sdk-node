@@ -356,9 +356,9 @@ export class TelesendClient extends EventEmitter {
             }
 
             const users = await this.migrateUsersHook();
-            
+
             this.channel?.ack(msg);
-            
+
             await Promise.all(
               users.map(async user => {
                 const userId = user.tg.toString();
@@ -366,7 +366,7 @@ export class TelesendClient extends EventEmitter {
                   userId,
                   message: messageData.message
                 };
-                
+
                 return this.channel?.sendToQueue(
                   queueName,
                   Buffer.from(JSON.stringify(individualMessage)),
@@ -374,7 +374,7 @@ export class TelesendClient extends EventEmitter {
                 );
               })
             );
-            
+
             this.emit('info', `Broadcast with userId=all expanded to ${users.length} individual messages`);
             return;
           }
@@ -385,20 +385,23 @@ export class TelesendClient extends EventEmitter {
           this.channel?.ack(msg);
           this.emit('messageSent', messageData.userId, true);
         } catch (error) {
-          const errorData = JSON.parse((error as Error).message);
-
-          if (errorData.error_code === 429) {
-            this.channel?.sendToQueue(
-              queueName,
-              Buffer.from(JSON.stringify(messageData)),
-              { persistent: true }
-            );
-            this.channel?.ack(msg);
-            this.emit('error', new Error(`Rate limit hit when sending message to user ${messageData.userId}, retrying later`));
-          } else {
-            this.channel?.ack(msg);
-            this.emit('messageSent', messageData.userId, false);
-            this.emit('error', new Error(`Error sending message to user ${messageData.userId}: ${(error as Error).message}`));
+          try {
+            const errorData = JSON.parse((error as Error).message);
+            if (errorData.error_code === 429) {
+              this.channel?.sendToQueue(
+                queueName,
+                Buffer.from(JSON.stringify(messageData)),
+                { persistent: true }
+              );
+              this.channel?.ack(msg);
+              this.emit('error', new Error(`Rate limit hit when sending message to user ${messageData.userId}, retrying later`));
+            } else {
+              this.channel?.ack(msg);
+              this.emit('messageSent', messageData.userId, false);
+              this.emit('error', new Error(`Error sending message to user ${messageData.userId}: ${(error as Error).message}`));
+            }
+          } catch (error) {
+            this.emit('error', new Error(`Error processing message: ${(error as Error).message}`));
           }
         }
       })();
